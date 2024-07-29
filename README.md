@@ -9,6 +9,8 @@ This repository contains Helm charts designed to help you manage GPU jobs effici
 - [Installation](#installation)
 - [Usage](#usage)
 - [Configuration](#configuration)
+- [MIG GPU Job Template](#mig-gpu-job-template)
+- [GPU Instance Profiles](#gpu-instance-profiles)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -98,6 +100,93 @@ To install the chart with custom values:
 
 ```sh
 helm install gpu-job gpu-jobs/gpu-job-chart -f values.yaml
+```
+
+## MIG GPU Job Template
+
+If you are using Multi-Instance GPU (MIG) on NVIDIA GPUs, here is a template to deploy a GPU job with MIG:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mig-gpu-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: mig-gpu-container
+        image: nvidia/cuda:11.2.1-base
+        resources:
+          limits:
+            nvidia.com/mig-1g.5gb: 1  # Request a specific MIG partition
+        command: ["nvidia-smi"]
+      restartPolicy: OnFailure
+      tolerations:
+      - key: "nvidia.com/mig"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      nodeSelector:
+        nvidia.com/mig.config: "all"  # Ensure the job is scheduled on nodes with MIG configuration
+```
+
+Apply this template to your Kubernetes cluster using:
+
+```sh
+kubectl apply -f mig-gpu-job.yaml
+```
+
+## GPU Instance Profiles
+
+```
++-----------------------------------------------------------------------------+
+| GPU instance profiles:                                                      |
+| GPU   Name             ID    Instances   Memory     P2P    SM    DEC   ENC  |
+|                              Free/Total   GiB              CE    JPEG  OFA  |
+|=============================================================================|
+|   0  MIG 1g.5gb        19     0/7        4.75       No     14     0     0   |
+|                                                             1     0     0   |
++-----------------------------------------------------------------------------+
+|   0  MIG 1g.5gb+me     20     0/1        4.75       No     14     1     0   |
+|                                                             1     1     1   |
++-----------------------------------------------------------------------------+
+|   0  MIG 1g.10gb       15     0/4        9.62       No     14     1     0   |
+|                                                             1     0     0   |
++-----------------------------------------------------------------------------+
+|   0  MIG 2g.10gb       14     0/3        9.62       No     28     1     0   |
+|                                                             2     0     0   |
++-----------------------------------------------------------------------------+
+|   0  MIG 3g.20gb        9     0/2        19.50      No     42     2     0   |
+|                                                             3     0     0   |
++-----------------------------------------------------------------------------+
+|   0  MIG 4g.20gb        5     0/1        19.50      No     56     2     0   |
+|                                                             4     0     0   |
++-----------------------------------------------------------------------------+
+|   0  MIG 7g.40gb        0     0/1        39.25      No     98     5     0   |
+|                                                             7     1     1   |
++-----------------------------------------------------------------------------+
+|   1  MIG 1g.5gb        19     0/7        4.75       No     14     0     0   |
+|                                                             1     0     0   |
++-----------------------------------------------------------------------------+
+|   1  MIG 1g.5gb+me     20     0/1        4.75       No     14     1     0   |
+|                                                             1     1     1   |
++-----------------------------------------------------------------------------+
+|   1  MIG 1g.10gb       15     0/4        9.62       No     14     1     0   |
+|                                                             1     0     0   |
++-----------------------------------------------------------------------------+
+|   1  MIG 2g.10gb       14     0/3        9.62       No     28     1     0   |
+|                                                             2     0     0   |
++-----------------------------------------------------------------------------+
+|   1  MIG 3g.20gb        9     0/2        19.50      No     42     2     0   |
+|                                                             3     0     0   |
++-----------------------------------------------------------------------------+
+|   1  MIG 4g.20gb        5     0/1        19.50      No     56     2     0   |
+|                                                             4     0     0   |
++-----------------------------------------------------------------------------+
+|   1  MIG 7g.40gb        0     0/1        39.25      No     98     5     0   |
+|                                                             7     1     1   |
++-----------------------------------------------------------------------------+
 ```
 
 ## Contributing
